@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olivia-Rolodex-RSS — Fresh Starts Registry</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --terracotta: #C4614A; --terracotta-light: #f5ebe7;
+    --teal: #347480; --teal-light: #e6f3f5; --teal-dark: #1a5560;
+    --warm-white: #FFFDF9; --brown: #2C2420; --brown-light: #e8ddd9; --text-muted: #9a7e78;
+    --legacy-bg: #f0e8f5; --legacy: #7a3e99;
+    --free-bg: #f0ebe6; --free: #9a7e78;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--warm-white); color: var(--brown); min-height: 100vh; }
+
+  header { background: var(--brown); padding: 2.5rem 2rem 2rem; text-align: center; }
+  header .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--terracotta); margin-bottom: 0.4rem; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 400; color: var(--warm-white); line-height: 1.2; margin-bottom: 0.4rem; }
+  header p { font-size: 13px; color: var(--text-muted); font-weight: 300; }
+
+  .controls { background: white; border-bottom: 1px solid var(--brown-light); padding: 10px 14px; }
+  .ctrl-search { position: relative; margin-bottom: 8px; }
+  .ctrl-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  input[type="search"] { display: block; width: 100%; padding: 9px 12px 9px 34px; border: 1px solid var(--brown-light); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--brown); background: var(--warm-white); outline: none; box-sizing: border-box; }
+  input[type="search"]:focus { border-color: var(--teal); }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  select { padding: 7px 24px 7px 10px; border: 1px solid var(--brown-light); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--brown); background: var(--warm-white); outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%239a7e78' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; cursor: pointer; }
+  select:focus { border-color: var(--teal); }
+  .count { font-size: 12px; color: var(--text-muted); white-space: nowrap; margin-left: auto; }
+
+  .ctrl-checks { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .ctrl-checks label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--brown); cursor: pointer; }
+  .ctrl-checks input[type="checkbox"] { accent-color: var(--teal); width: 14px; height: 14px; cursor: pointer; }
+  .ctrl-checks .lbl { font-size: 11px; color: var(--text-muted); }
+
+  .progress-wrap { background: white; border-bottom: 1px solid var(--brown-light); padding: 0.5rem 1rem; display: none; align-items: center; gap: 10px; }
+  .progress-wrap.visible { display: flex; }
+  .progress-bar-track { flex: 1; height: 4px; background: var(--brown-light); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--teal); border-radius: 2px; transition: width 0.3s; width: 0%; }
+  .progress-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+  .debug-bar { font-size: 11px; color: var(--text-muted); background: #f5f1ee; border-bottom: 1px solid var(--brown-light); padding: 6px 14px; display: none; }
+  .debug-bar.visible { display: block; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; background: var(--brown-light); border-top: 1px solid var(--brown-light); }
+
+  /* Card */
+  .card { background: var(--warm-white); display: flex; flex-direction: column; animation: fadeIn 0.3s ease both; }
+  .card:hover .card-body { background: white; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Tier banner at top of card */
+  .card-banner { padding: 10px 14px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .card-banner.premium  { background: var(--terracotta-light); }
+  .card-banner.legacy   { background: var(--legacy-bg); }
+  .card-banner.essential{ background: var(--teal-light); }
+  .card-banner.free     { background: var(--free-bg); }
+
+  .banner-tier { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+  .card-banner.premium   .banner-tier { color: var(--terracotta); }
+  .card-banner.legacy    .banner-tier { color: var(--legacy); }
+  .card-banner.essential .banner-tier { color: var(--teal-dark); }
+  .card-banner.free      .banner-tier { color: var(--free); }
+
+  /* Name block replacing avatar */
+  .card-namebox { padding: 10px 14px 4px; }
+  .card-name { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 500; color: var(--brown); line-height: 1.2; margin-bottom: 2px; }
+  .card-name a { color: inherit; text-decoration: underline; text-decoration-color: var(--terracotta); text-underline-offset: 2px; }
+  .card-biz { font-size: 11px; color: var(--text-muted); }
+
+  .card-body { padding: 8px 14px 12px; flex: 1; transition: background 0.15s; }
+
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: #f5f1ee; color: var(--brown); border: 1px solid var(--brown-light); }
+  .tag.loc { background: var(--teal-light); color: var(--teal-dark); border-color: #9FE1CB; }
+
+  .card-links { display: flex; flex-direction: column; gap: 5px; }
+  .card-link { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--teal); text-decoration: none; word-break: break-all; }
+  .card-link:hover { color: var(--teal-dark); }
+  .card-link.consult { color: var(--terracotta); font-weight: 500; }
+  .card-link svg { flex-shrink: 0; opacity: 0.7; }
+
+  .empty { grid-column: 1/-1; text-align: center; padding: 5rem 2rem; font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--text-muted); font-style: italic; background: var(--warm-white); }
+  footer { text-align: center; padding: 1.5rem; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--brown-light); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Fresh Starts Registry — Internal</div>
+  <h1>Olivia-Rolodex-RSS</h1>
+  <p>Active experts — tiers, tags, consult links</p>
+</header>
+
+<div class="controls">
+  <div class="ctrl-search">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="search" placeholder="Search by name, business, or profession…">
+  </div>
+  <div class="ctrl-row">
+    <select id="filter-tier">
+      <option value="">All tiers</option>
+      <option value="premium">Premium</option>
+      <option value="legacy">Premium (Legacy)</option>
+      <option value="essential">Essential</option>
+      <option value="free">Free</option>
+    </select>
+    <select id="filter-tag"><option value="">All professions</option></select>
+    <select id="filter-location"><option value="">All locations</option></select>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="ctrl-checks">
+    <span class="lbl">Filter:</span>
+    <label><input type="checkbox" id="chk-national"> National</label>
+    <label><input type="checkbox" id="chk-international"> International</label>
+    <label><input type="checkbox" id="chk-remote"> Remote</label>
+    <label><input type="checkbox" id="chk-consult"> Has free consult</label>
+  </div>
+</div>
+
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
+  <span class="progress-label" id="progress-label">Loading…</span>
+</div>
+
+<div class="debug-bar" id="debug-bar"></div>
+
+<div id="grid" class="grid"><div class="empty">Loading experts…</div></div>
+<footer>Olivia's internal reference — Fresh Starts Registry</footer>
+
+<script>
+const _a = atob('aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcw==');
+const _b = ['AKfycbz','oOKayIr1','ckUduxWh','W9mux9OQ','cXtac7oZ','5DofJyvx','HdfaC0V3','SJUu_MJ9','opum6DrS','aig'].join('');
+const _c = atob('L2V4ZWM=');
+const SHEET_URL = _a + '/' + _b + _c;
+const RSS_URL = 'https://www.freshstartsregistry.com/resourceguide?format=rss';
+
+const COL = { status:'Status', name:'Name', business:'Business Name', type:'Expert Type', email:'Email', fsr:'FSR Link' };
+
+// ---- Tier from sheet ----
+function getTier(val) {
+  const s = String(val||'').trim().toUpperCase();
+  if (s === 'FREE') return 'free';
+  if (['CANCELLED','DUPE','IGNORE','NOT CONVERT'].some(x => s.includes(x))) return null;
+  const n = Number(s);
+  if (isNaN(n) || n <= 0) return null;
+  if (n === 37) return 'legacy';
+  if (n >= 55) return 'premium';
+  return 'essential';
+}
+const TIER_LABEL = { premium:'★★ Premium', legacy:'★★ Premium (Legacy)', essential:'★ Essential', free:'Free' };
+
+// ---- Location tags ----
+const US_STATES = new Set(['alabama','alaska','arizona','arkansas','california','colorado','connecticut','delaware','florida','georgia','hawaii','idaho','illinois','indiana','iowa','kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan','minnesota','mississippi','missouri','montana','nebraska','nevada','new hampshire','new jersey','new mexico','new york','north carolina','north dakota','ohio','oklahoma','oregon','pennsylvania','rhode island','south carolina','south dakota','tennessee','texas','utah','vermont','virginia','washington','west virginia','wisconsin','wyoming']);
+const LOCATION_WORDS = new Set(['national','international','remote','online','virtual','nationwide','worldwide','global','new england','ontario','quebec','canada','alberta','british columbia','long island','los angeles','chicago','boston','seattle','denver','miami','nashville','philadelphia','phoenix','san diego','san francisco','minneapolis','portland','atlanta','dc','district of columbia']);
+const TIER_MARKERS = new Set(['*','**','--']);
+const NOISE = new Set(['true','false','featured','coach','coaches','therapist','therapists','lawyer','lawyers','attorney','attorneys','mediator','mediators']);
+
+function classifyTag(t) {
+  const tl = t.toLowerCase().trim();
+  if (TIER_MARKERS.has(tl)) return 'tier';
+  if (tl === 'national' || tl === 'nationwide') return 'national';
+  if (tl === 'international' || tl === 'worldwide' || tl === 'global') return 'international';
+  if (tl === 'remote' || tl === 'online' || tl === 'virtual') return 'remote';
+  if (US_STATES.has(tl)) return 'state';
+  if (LOCATION_WORDS.has(tl)) return 'location';
+  if (/^[a-z]{2}$/.test(tl)) return 'abbrev';
+  if (NOISE.has(tl)) return 'noise';
+  return 'profession';
+}
+
+function normalizeProfession(t) {
+  const m = {'mediators':'Mediator','therapists':'Therapist','lawyers':'Lawyer','attorneys':'Attorney','coaches':'Coach','realtors':'Realtor'};
+  return m[t.toLowerCase()] || t;
+}
+
+function stemMatch(a, b) {
+  // Match mediator/mediators, therapist/therapists etc
+  const stem = s => s.toLowerCase().replace(/ors$|ers$|ists$|s$/,'');
+  return stem(a) === stem(b) || a.toLowerCase().includes(stem(b)) || b.toLowerCase().includes(stem(a));
+}
+
+// ---- RSS parse ----
+async function fetchRSS() {
+  const postMap = {};
+  let debugInfo = '';
+  try {
+    const res = await fetch(RSS_URL);
+    if (!res.ok) { debugInfo = `RSS error: ${res.status}`; return { postMap, debugInfo }; }
+    const text = await res.text();
+
+    // Log raw first item for debugging
+    const firstItem = text.match(/<item>([\s\S]*?)<\/item>/);
+    if (firstItem) {
+      // Extract all tag names present in the first item
+      const tagNames = [...new Set([...firstItem[1].matchAll(/<([a-zA-Z:]+)[\s>]/g)].map(m=>m[1]))];
+      debugInfo = `RSS OK — fields in first item: ${tagNames.join(', ')}`;
+      console.log('First RSS item raw:', firstItem[1].substring(0, 2000));
+    }
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'application/xml');
+    const parseError = xml.querySelector('parseerror');
+    if (parseError) { debugInfo = 'RSS XML parse error'; return { postMap, debugInfo }; }
+
+    const items = xml.querySelectorAll('item');
+    debugInfo += ` | ${items.length} items`;
+
+    for (const item of items) {
+      // Get URL slug
+      const linkEl = item.querySelector('link');
+      // In RSS, <link> is sometimes CDATA or next-sibling text node
+      let link = '';
+      if (linkEl) {
+        link = linkEl.textContent.trim();
+        // Sometimes link text is empty and value is in next text node
+        if (!link) {
+          const next = linkEl.nextSibling;
+          if (next && next.nodeType === 3) link = next.textContent.trim();
+        }
+      }
+      // Also try guid as fallback
+      if (!link) {
+        const guid = item.querySelector('guid');
+        if (guid) link = guid.textContent.trim();
+      }
+      const slug = link.split('/').pop().toLowerCase().replace(/\?.*$/,'').trim();
+      if (!slug) continue;
+
+      // Tags — <category> elements
+      const cats = [...item.querySelectorAll('category')].map(c => c.textContent.trim()).filter(Boolean);
+
+      // Photo — try every possible media namespace
+      let photo = null;
+      // media:content
+      const mc = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/','content')[0]
+               || item.getElementsByTagNameNS('*','content')[0];
+      if (mc) photo = mc.getAttribute('url');
+      // media:thumbnail
+      const mt = item.getElementsByTagNameNS('http://search.yahoo.com/mrss/','thumbnail')[0]
+               || item.getElementsByTagNameNS('*','thumbnail')[0];
+      if (!photo && mt) photo = mt.getAttribute('url');
+      // enclosure
+      const enc = item.querySelector('enclosure');
+      if (!photo && enc) photo = enc.getAttribute('url');
+      if (photo && !photo.includes('?')) photo += '?format=400w';
+
+      // Consult link — scan raw item XML text for "ook a Free Consult" pattern
+      const itemText = item.innerHTML || new XMLSerializer().serializeToString(item);
+      let consultLink = null;
+
+      // Try to find href immediately before "ook a Free Consult" text
+      // Pattern: href="URL" anywhere near "Book a Free Consult"
+      const consultPatterns = [
+        /href=["']([^"'\s]+)["'][^>]*>[^<]*[Bb]ook\s+[Aa]\s+[Ff]ree\s+[Cc]onsult/,
+        /href=["']([^"'\s]+)["'][^>]*>[^<]*[Ff]ree\s+[Cc]onsult/,
+        /href=["']([^"'\s]+)["'][^>]*>[^<]*[Ss]chedule\s+[Aa]\s+[Ff]ree/,
+        /href=["']([^"'\s]+)["'][^>]*>[^<]*[Bb]ook\s+[Ff]ree/,
+      ];
+      for (const p of consultPatterns) {
+        const m = itemText.match(p);
+        if (m && m[1] && !m[1].includes('freshstartsregistry.com') && m[1].startsWith('http')) {
+          consultLink = m[1];
+          break;
+        }
+      }
+
+      postMap[slug] = { cats, photo, consultLink };
+    }
+
+    debugInfo += ` | ${Object.keys(postMap).length} slugs mapped`;
+    // Log a sample for debugging
+    const sample = Object.entries(postMap).slice(0,3);
+    sample.forEach(([slug, data]) => {
+      console.log(`Slug: ${slug}`, 'cats:', data.cats, 'consult:', data.consultLink, 'photo:', data.photo?.substring(0,60));
+    });
+
+  } catch(e) {
+    debugInfo = `RSS fetch error: ${e.message}`;
+    console.error('RSS error:', e);
+  }
+  return { postMap, debugInfo };
+}
+
+let allExperts = [];
+let allTagsSet = new Set();
+let allLocationsSet = new Set();
+
+function initials(n) { return (n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0].toUpperCase()).join(''); }
+
+function renderCards(experts) {
+  const grid = document.getElementById('grid');
+  document.getElementById('count').textContent = `${experts.length} expert${experts.length!==1?'s':''}`;
+  if (!experts.length) { grid.innerHTML = `<div class="empty">No experts found.</div>`; return; }
+
+  grid.innerHTML = experts.map((e,i) => {
+    const tier = e.tier || 'essential';
+    const name = (e.name||'Unknown').trim();
+    const biz  = (e.business||'').trim();
+    const nameDisplay = e.consultLink
+      ? `<a href="${e.consultLink}" target="_blank" rel="noopener">${name}</a>`
+      : name;
+
+    return `<div class="card" style="animation-delay:${Math.min(i*0.015,0.4)}s">
+      <div class="card-banner ${tier}">
+        <span class="banner-tier">${TIER_LABEL[tier]}</span>
+      </div>
+      <div class="card-namebox">
+        <div class="card-name">${nameDisplay}</div>
+        ${biz?`<div class="card-biz">${biz}</div>`:''}
+      </div>
+      <div class="card-body">
+        ${e.professions.length?`<div class="card-tags">${e.professions.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+        ${e.locations.length?`<div class="card-tags">${e.locations.map(t=>`<span class="tag loc">${t}</span>`).join('')}</div>`:''}
+        <div class="card-links">
+          ${e.email?`<a class="card-link" href="mailto:${e.email}"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>${e.email}</a>`:''}
+          ${e.fsr?`<a class="card-link" href="${e.fsr}" target="_blank" rel="noopener"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>FSR profile</a>`:''}
+          ${e.consultLink?`<a class="card-link consult" href="${e.consultLink}" target="_blank" rel="noopener"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Book free consult</a>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const search  = document.getElementById('search').value.toLowerCase().trim();
+  const tier    = document.getElementById('filter-tier').value;
+  const tag     = document.getElementById('filter-tag').value.toLowerCase().trim();
+  const loc     = document.getElementById('filter-location').value.toLowerCase().trim();
+  const natl    = document.getElementById('chk-national').checked;
+  const intl    = document.getElementById('chk-international').checked;
+  const remote  = document.getElementById('chk-remote').checked;
+  const consult = document.getElementById('chk-consult').checked;
+
+  renderCards(allExperts.filter(e => {
+    const n = (e.name||'').toLowerCase();
+    const b = (e.business||'').toLowerCase();
+    const profs = e.professions.map(t=>t.toLowerCase());
+    const locs  = e.locations.map(t=>t.toLowerCase());
+    const allT  = [...profs,...locs];
+
+    if (search && !n.includes(search) && !b.includes(search) && !profs.some(t=>stemMatch(t,search))) return false;
+    if (tier && e.tier !== tier) return false;
+    if (tag && !profs.some(t=>stemMatch(t,tag))) return false;
+    if (loc && !locs.some(t=>t.includes(loc))) return false;
+    if (natl && !e.isNational) return false;
+    if (intl && !e.isInternational) return false;
+    if (remote && !e.isRemote) return false;
+    if (consult && !e.consultLink) return false;
+    return true;
+  }));
+}
+
+function rebuildDropdowns() {
+  const tagSel = document.getElementById('filter-tag');
+  const locSel = document.getElementById('filter-location');
+  const curTag = tagSel.value;
+  const curLoc = locSel.value;
+
+  tagSel.innerHTML = '<option value="">All professions</option>';
+  [...allTagsSet].sort().forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.toLowerCase(); o.textContent = t;
+    tagSel.appendChild(o);
+  });
+  if (curTag) tagSel.value = curTag;
+
+  locSel.innerHTML = '<option value="">All locations</option>';
+  [...allLocationsSet].sort().forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.toLowerCase(); o.textContent = t;
+    locSel.appendChild(o);
+  });
+  if (curLoc) locSel.value = curLoc;
+}
+
+async function loadData() {
+  const pw = document.getElementById('progress-wrap');
+  const pf = document.getElementById('progress-fill');
+  const pl = document.getElementById('progress-label');
+  const db = document.getElementById('debug-bar');
+  pw.classList.add('visible');
+
+  pl.textContent = 'Loading expert list from sheet…';
+  let rows;
+  try {
+    const res = await fetch(SHEET_URL);
+    rows = await res.json();
+  } catch(e) {
+    document.getElementById('grid').innerHTML = `<div class="empty">Could not load expert list.</div>`;
+    pw.classList.remove('visible');
+    return;
+  }
+  pf.style.width = '25%';
+
+  pl.textContent = 'Fetching RSS feed…';
+  const { postMap, debugInfo } = await fetchRSS();
+  pf.style.width = '70%';
+
+  // Show debug info
+  db.textContent = debugInfo;
+  db.classList.add('visible');
+
+  pl.textContent = 'Building directory…';
+  allTagsSet = new Set();
+  allLocationsSet = new Set();
+
+  const nameParts = (name, biz) => (name+' '+biz).toLowerCase().split(/\s+/).filter(w=>w.length>2);
+
+  allExperts = rows
+    .filter(r => getTier(r[COL.status]) !== null)
+    .map(row => {
+      const tier  = getTier(row[COL.status]);
+      const name  = (row[COL.name]||'').trim();
+      const biz   = (row[COL.business]||'').trim();
+      const fsr   = (row[COL.fsr]||'').trim();
+      const slug  = fsr.split('/').pop().toLowerCase().replace(/\?.*$/,'').trim();
+      const post  = postMap[slug] || {};
+
+      // Use RSS cats if available, else fall back to Expert Type
+      const rawCats = (post.cats && post.cats.length > 0) ? post.cats : [(row[COL.type]||'').trim()].filter(Boolean);
+      const nparts  = nameParts(name, biz);
+
+      const professions = [];
+      const locations   = [];
+      let isNational = false, isInternational = false, isRemote = false;
+
+      rawCats.forEach(t => {
+        const cls = classifyTag(t);
+        if (cls === 'tier' || cls === 'noise' || cls === 'abbrev') return;
+        if (cls === 'national') { isNational = true; return; }
+        if (cls === 'international') { isInternational = true; return; }
+        if (cls === 'remote') { isRemote = true; return; }
+        if (cls === 'state' || cls === 'location') {
+          locations.push(t);
+          allLocationsSet.add(t);
+          return;
+        }
+        // profession — filter out name words
+        const words = t.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+        if (words.length && words.filter(w=>nparts.includes(w)).length/words.length >= 0.6) return;
+        const norm = normalizeProfession(t);
+        // deduplicate by stem
+        if (!professions.some(p=>stemMatch(p,norm))) {
+          professions.push(norm);
+          allTagsSet.add(norm);
+        }
+      });
+
+      return {
+        name, business: biz, tier,
+        email: (row[COL.email]||'').trim(),
+        fsr, professions, locations,
+        isNational, isInternational, isRemote,
+        consultLink: post.consultLink || null,
+      };
+    })
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  pf.style.width = '100%';
+  rebuildDropdowns();
+  applyFilters();
+  pl.textContent = `${allExperts.length} experts loaded`;
+  setTimeout(() => pw.classList.remove('visible'), 2000);
+}
+
+['search','filter-tier','filter-tag','filter-location'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener(id==='search'?'input':'change', applyFilters);
+});
+['chk-national','chk-international','chk-remote','chk-consult'].forEach(id => {
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+loadData();
+</script>
+</body>
+</html>
